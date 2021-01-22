@@ -13,7 +13,7 @@ const keepAliveAgent = new (require('https')).Agent({
 	keepAlive: true
 });
 
-const TKN = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJTYWZlU2l6ZS9zdGFnZSIsImV4cCI6MTYxMDk4MjcyMCwiYXVkIjoiUk9MRV9FV0VCIiwic3ViIjoic2FmZXNpemVUZXN0MTAiLCJwZHQiOiI1cUVZdnpLcDd0NWtLTkl1M0NUd2VHQTFpbEZ2NTBaWjhWQ1JFVk92SVo2TW5DYUxCK0ZjazN4eVJ1SnFjdStTNGZkOFJWSDdpNzV1Q1IzaTc4U1RnR3F1djZzeHV6Q3l1RlJVc05IWG5keFVCRnhOM295SlBiREcwWGRNV0l6OW52WjRCRWM0M2NQeEJaYXpXUVZJNlQ2d3RCSFhMNmU0RXBkZHBEd3F2dmR6TS9xWW5RVGtEcENrdktDWmhwMG0iLCJwcmlhcyI6IjkwMTAzIiwidGVuYW50IjoiOTAxMDMifQ.aku_MAwsrdzmRNWRkO8HToSNbWT6VHTeYjxijvFwryA'
+const TKN = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJTYWZlU2l6ZS9zdGFnZSIsImV4cCI6MTYxMjAwNDU4MCwiYXVkIjoiUk9MRV9FV0VCIiwic3ViIjoic2FmZXNpemVUZXN0MTAiLCJwZHQiOiJYMkZrOTBVbzlTa1FnMjZBV3RNZ3UvdEZLbkU3NjhWcEd3bDNFRGl1NGxZeE9iSldpQ3pnTlA1NjE5K00wZVBURnpWQzFnSlRIUWhsQi9wRGRhREUvWmhoM1QvYk1kd1lzZE5QSEJUdks2UXVEQis1bUxJeWN4UC96S1l2NVR3ZFNXa0pXMlBDSzRjazJ1aDdUVzBzWEpnNUxkOVBLbEQvb29hTmQ3SHgxNThyYUpic2hONTlkOXNFNDRlK3B1WWQiLCJwcmlhcyI6IjkwMTAzIiwidGVuYW50IjoiOTAxMDMifQ.ePGrxIAegfG3RIzR-zkdgT1Vs2s9DoZypyI4bhN_rpA'
 const KEY = 456233;
 
 const client = got.extend({
@@ -50,7 +50,7 @@ async function getDevices(startDate, endDate) {
 			dayDevice[device] = (dayDevice[device] || 0) + v;
 		}
 	});
-	
+
 	return matchDev;
 	
 }
@@ -67,7 +67,15 @@ async function getIDs(device, date) {
 		endTime
 	};
 
-	return await client.get('v1/test/dyndb', { searchParams }).json();
+	let recommendation = await client.get('v1/test/dyndb', { searchParams }).json();
+
+	const justIds = recommendation.map(rec => rec.id);
+	//console.log(justIds)
+	//ID-ji se ne ponavljajo
+	let filteredIds = recommendation.filter(({id}, index) => !justIds.includes(id, index + 1));
+	//Samo ID-ji
+	const ids = filteredIds.map(id => id.id)
+	return ids
 }
 
 /* 
@@ -102,6 +110,7 @@ function compare( a, b ) {
 	return 0;
 }
 
+
 (async () => {
 	try {
 		//1.korak
@@ -110,12 +119,12 @@ function compare( a, b ) {
 			let devices = matchDev[date];
 			//2.korak in 3.korak
 			for (const dev in devices) {
-				const recommendation = await getIDs(dev, date);
-				const res = await getShoe(recommendation[0].id, date);
+				const rec = await getIDs(dev, date); 
+			 	const res = await getShoe(rec, date);
 				const sorted = res.sort( compare );
-				const sortedToString = JSON.stringify(sorted)
+				const sortedToString = JSON.stringify(sorted);
 				fs.appendFile('shoes.txt', sortedToString, function (err) {
-					if (err) throw err;
+					if (err) throw err;  
 				});
 			}
 
